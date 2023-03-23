@@ -10,6 +10,8 @@ import (
 	"backend_crudgo/domain/products/infrastructure/persistence"
 	"backend_crudgo/infrastructure/database"
 	"backend_crudgo/infrastructure/middleware"
+
+	"github.com/go-chi/chi"
 )
 
 const (
@@ -53,9 +55,32 @@ func (prod *ProductRouter) CreateProductHandler(w http.ResponseWriter, r *http.R
 // GetProductHandler Created initialize get product.
 func (prod *ProductRouter) GetProductHandler(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
-	var id = r.URL.Query().Get(ID)
-
+	var id = chi.URLParam(r, "id")
 	productResponse, err := prod.Service.GetProductHandler(ctx, id)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	jsonBytes, err := json.Marshal(productResponse)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(jsonBytes)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (prod *ProductRouter) GetProductsHandler(w http.ResponseWriter, r *http.Request) {
+	var ctx = r.Context()
+
+	productResponse, err := prod.Service.GetProductsHandler(ctx)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

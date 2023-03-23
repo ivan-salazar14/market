@@ -8,6 +8,7 @@ import (
 
 	"context"
 	"database/sql"
+
 	"github.com/rs/zerolog/log"
 )
 
@@ -75,6 +76,39 @@ func (sr *sqlProductRepo) GetProductHandler(ctx context.Context, id string) (*re
 	productResponse := &response.ProductResponse{
 		Message: "Get product success",
 		Product: product,
+	}
+
+	return productResponse, nil
+}
+
+func (sr *sqlProductRepo) GetProductsHandler(ctx context.Context) (*response.ProductsResponse, error) {
+	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectProducts)
+	if err != nil {
+		return &response.ProductsResponse{}, nil
+	}
+
+	defer func() {
+		err = stmt.Close()
+		if err != nil {
+			log.Error().Msgf("Could not close testament : [error] %s", err.Error())
+		}
+	}()
+	row, err := sr.Conn.DB.QueryContext(ctx, SelectProducts)
+
+	var products []*model.Product
+	for row.Next() {
+		var product = &model.Product{}
+		err = row.Scan(&product.ProductID, &product.ProductName, &product.ProductAmount, &product.ProductUserCreated,
+			&product.ProductDateCreated, &product.ProductUserModify, &product.ProductDateModify)
+
+		products = append(products, product)
+	}
+	if err != nil {
+		return &response.ProductsResponse{Error: err.Error()}, err
+	}
+	productResponse := &response.ProductsResponse{
+		Message: "Get product success",
+		Product: products,
 	}
 
 	return productResponse, nil

@@ -11,4 +11,5 @@ import (
 type ProductRepository interface {
 	CreateProductHandler(ctx context.Context, product *model.Product) (*response.ProductCreateResponse, error)
 	GetProductHandler(ctx context.Context, id string) (*response.ProductResponse, error)
+	GetProductsHandler(ctx context.Context) (*response.ProductsResponse, error)
 }

@@ -12,3 +12,9 @@ type ProductResponse struct {
 	Product *model.Product `json:"product,omitempty"`
 	Error   string         `json:"error,omitempty"`
 }
+
+type ProductsResponse struct {
+	Message string           `json:"message"`
+	Product []*model.Product `json:"product,omitempty"`
+	Error   string           `json:"error,omitempty"`
+}
