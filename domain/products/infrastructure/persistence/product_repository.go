@@ -44,17 +44,17 @@ func (sr *sqlProductRepo) CreateProductHandler(ctx context.Context, product *mod
 		return &response.ProductCreateResponse{}, err
 	}
 
-	ProductResponse := response.ProductCreateResponse{
+	GenericResponse := response.ProductCreateResponse{
 		Message: "Product created",
 	}
 
-	return &ProductResponse, nil
+	return &GenericResponse, nil
 }
 
-func (sr *sqlProductRepo) GetProductHandler(ctx context.Context, id string) (*response.ProductResponse, error) {
+func (sr *sqlProductRepo) GetProductHandler(ctx context.Context, id string) (*response.GenericResponse, error) {
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectProduct)
 	if err != nil {
-		return &response.ProductResponse{}, err
+		return &response.GenericResponse{}, err
 	}
 
 	defer func() {
@@ -70,21 +70,21 @@ func (sr *sqlProductRepo) GetProductHandler(ctx context.Context, id string) (*re
 	err = row.Scan(&product.ProductID, &product.ProductName, &product.ProductAmount, &product.ProductUserCreated,
 		&product.ProductDateCreated, &product.ProductUserModify, &product.ProductDateModify)
 	if err != nil {
-		return &response.ProductResponse{Error: err.Error()}, err
+		return &response.GenericResponse{Error: err.Error()}, err
 	}
 
-	productResponse := &response.ProductResponse{
+	GenericResponse := &response.GenericResponse{
 		Message: "Get product success",
 		Product: product,
 	}
 
-	return productResponse, nil
+	return GenericResponse, nil
 }
 
-func (sr *sqlProductRepo) GetProductsHandler(ctx context.Context) (*response.ProductsResponse, error) {
+func (sr *sqlProductRepo) GetProductsHandler(ctx context.Context) (*response.GenericResponse, error) {
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectProducts)
 	if err != nil {
-		return &response.ProductsResponse{}, nil
+		return &response.GenericResponse{}, nil
 	}
 
 	defer func() {
@@ -104,12 +104,12 @@ func (sr *sqlProductRepo) GetProductsHandler(ctx context.Context) (*response.Pro
 		products = append(products, product)
 	}
 	if err != nil {
-		return &response.ProductsResponse{Error: err.Error()}, err
+		return &response.GenericResponse{Error: err.Error()}, err
 	}
-	productResponse := &response.ProductsResponse{
+	GenericResponse := &response.GenericResponse{
 		Message: "Get product success",
 		Product: products,
 	}
 
-	return productResponse, nil
+	return GenericResponse, nil
 }
