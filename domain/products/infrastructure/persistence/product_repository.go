@@ -23,12 +23,12 @@ func NewProductRepository(Conn *database.DataDB) repoDomain.ProductRepository {
 	}
 }
 
-func (sr *sqlProductRepo) CreateProductHandler(ctx context.Context, product *model.Product) (*response.ProductCreateResponse, error) {
+func (sr *sqlProductRepo) CreateProductHandler(ctx context.Context, product *model.Product) (*response.CreateResponse, error) {
 	var idResult string
 
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, InsertProduct)
 	if err != nil {
-		return &response.ProductCreateResponse{}, err
+		return &response.CreateResponse{}, err
 	}
 
 	defer func() {
@@ -41,10 +41,10 @@ func (sr *sqlProductRepo) CreateProductHandler(ctx context.Context, product *mod
 	row := stmt.QueryRowContext(ctx, &product.ProductID, &product.ProductName, &product.ProductAmount, &product.ProductUserCreated, &product.ProductUserModify)
 	err = row.Scan(&idResult)
 	if err != sql.ErrNoRows {
-		return &response.ProductCreateResponse{}, err
+		return &response.CreateResponse{}, err
 	}
 
-	GenericResponse := response.ProductCreateResponse{
+	GenericResponse := response.CreateResponse{
 		Message: "Product created",
 	}
 

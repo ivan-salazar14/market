@@ -10,6 +10,8 @@ import (
 	"backend_crudgo/infrastructure/database"
 	"backend_crudgo/infrastructure/kit/enum"
 
+	routes "backend_crudgo/infrastructure/routes"
+
 	"github.com/go-chi/chi"
 	chiMiddleware "github.com/go-chi/chi/middleware"
 	"github.com/rs/zerolog/log"
@@ -37,7 +39,8 @@ func newServer(port string, conn *database.DataDB) *Server {
 	// router.Use(middleware.CORSMiddleware)
 
 	//default path to be used in the health checker
-	router.Mount(enum.BasePath, RoutesProducts(conn))
+	router.Mount(enum.BasePath, routes.RoutesProducts(conn))
+	router.Mount(enum.BasePath, routes.RoutesUsers(conn))
 
 	s := &http.Server{
 		Addr:         ":" + port,
