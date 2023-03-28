@@ -40,7 +40,7 @@ func newServer(port string, conn *database.DataDB) *Server {
 
 	//default path to be used in the health checker
 	router.Mount(enum.BasePath, routes.RoutesProducts(conn))
-	router.Mount(enum.BasePath, routes.RoutesUsers(conn))
+	router.Mount(enum.BasePathUser, routes.RoutesUsers(conn))
 
 	s := &http.Server{
 		Addr:         ":" + port,

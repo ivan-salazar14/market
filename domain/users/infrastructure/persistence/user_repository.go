@@ -38,7 +38,7 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 		}
 	}()
 
-	row := stmt.QueryRowContext(ctx, &user.UserID, &user.Name, &user.Email, &user.DateCreated)
+	row := stmt.QueryRowContext(ctx, &user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated)
 	err = row.Scan(&idResult)
 	if err != sql.ErrNoRows {
 		return &response.CreateResponse{}, err
@@ -67,7 +67,7 @@ func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response
 	row := stmt.QueryRowContext(ctx, id)
 	user := &model.User{}
 
-	err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.DateCreated,
+	err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated,
 		&user.UserModify, &user.DateModify)
 	if err != nil {
 		return &response.GenericUserResponse{Error: err.Error()}, err
@@ -98,8 +98,8 @@ func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUs
 	var users []*model.User
 	for row.Next() {
 		var user = &model.User{}
-		err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.DateCreated,
-			&user.UserModify, &user.DateModify)
+		err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword,
+			&user.DateCreated, &user.UserModify, &user.DateModify)
 
 		users = append(users, user)
 	}
