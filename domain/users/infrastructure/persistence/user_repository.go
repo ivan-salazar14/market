@@ -10,6 +10,7 @@ import (
 	"database/sql"
 
 	"github.com/rs/zerolog/log"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type sqlUserRepo struct {
@@ -37,8 +38,9 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 			log.Error().Msgf("Could not close testament : [error] %s", err.Error())
 		}
 	}()
-
-	row := stmt.QueryRowContext(ctx, &user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated)
+	user.UserPassword = hashPassword(user.UserPassword)
+	row := stmt.QueryRowContext(ctx, &user.UserID, &user.Name, &user.UserIdentifier, &user.Email,
+		&user.UserPassword, &user.UserTypeIdentifier)
 	err = row.Scan(&idResult)
 	if err != sql.ErrNoRows {
 		return &response.CreateResponse{}, err
@@ -112,4 +114,52 @@ func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUs
 	}
 
 	return GenericUserResponse, nil
+}
+
+func hashPassword(password string) string {
+	// Generate a hash of the password using bcrypt
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(hashedPassword)
+}
+
+/*
+func updateUserPassword(db *sql.DB, user *User, newPassword string) error {
+    // Generar hash a partir de la nueva contraseña usando bcrypt
+    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+    if err != nil {
+        return err
+    }
+
+    // Actualizar la contraseña en la base de datos
+    _, err = db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, user.ID)
+    if err != nil {
+        return err
+    }
+
+    // Actualizar la contraseña en la referencia del objeto User
+    user.Password = string(hashedPassword)
+
+    return nil
+}
+*/
+
+func authenticateUser(db *sql.DB, username string, password string) (*User, error) {
+	// Buscar el usuario en la base de datos por nombre de usuario
+	var user User
+	err := db.QueryRow("SELECT id, username, password FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Password)
+	if err != nil {
+		return nil, err
+	}
+
+	// Comparar la contraseña en texto plano con el hash de contraseña cifrado almacenado en la base de datos
+	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		return nil, err
+	}
+
+	// La contraseña es válida, devolver el usuario autenticado
+	return &user, nil
 }

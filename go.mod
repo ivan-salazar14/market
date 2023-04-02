@@ -7,5 +7,5 @@ require (
 	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.9.0
 	github.com/rs/zerolog v1.29.0
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/crypto v0.7.0
 )
