@@ -21,7 +21,7 @@ func RoutesUsers(conn *database.DataDB) http.Handler {
 // Router user
 func routesUser(handler *v1.UserRouter) http.Handler {
 	router := chi.NewRouter()
-	router.Post(enum.LoginUserPath, handler.GetUserHandler)
+	router.Post(enum.LoginUserPath, handler.LoginUserHandler)
 	router.Post(enum.RegisterPath, handler.CreateUserHandler)
 
 	return router

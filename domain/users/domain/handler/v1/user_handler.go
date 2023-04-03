@@ -10,8 +10,6 @@ import (
 	"backend_crudgo/domain/users/infrastructure/persistence"
 	"backend_crudgo/infrastructure/database"
 	"backend_crudgo/infrastructure/middleware"
-
-	"github.com/go-chi/chi"
 )
 
 const (
@@ -53,10 +51,19 @@ func (prod *UserRouter) CreateUserHandler(w http.ResponseWriter, r *http.Request
 }
 
 // GetUserHandler Created initialize get user.
-func (prod *UserRouter) GetUserHandler(w http.ResponseWriter, r *http.Request) {
+func (prod *UserRouter) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
+
+	var user model.User
 	var ctx = r.Context()
-	var id = chi.URLParam(r, "id")
-	userResponse, err := prod.Service.GetUserHandler(ctx, id)
+
+	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		_ = middleware.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+		return
+	}
+
+	userResponse, err := prod.Service.LoginUserHandler(ctx, &user)
+
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return

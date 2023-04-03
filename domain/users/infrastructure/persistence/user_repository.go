@@ -5,9 +5,12 @@ import (
 	repoDomain "backend_crudgo/domain/users/domain/repository"
 	"backend_crudgo/infrastructure/database"
 	response "backend_crudgo/types"
-
 	"context"
 	"database/sql"
+	"os"
+	"time"
+
+	"github.com/dgrijalva/jwt-go"
 
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
@@ -51,6 +54,44 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 	}
 
 	return &GenericUserResponse, nil
+}
+
+func (sr *sqlUserRepo) LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error) {
+	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectLoginUser)
+	if err != nil {
+		return &response.GenericUserResponse{}, err
+	}
+
+	defer func() {
+		err = stmt.Close()
+		if err != nil {
+			log.Error().Msgf("Could not close testament : [error] %s", err.Error())
+		}
+	}()
+
+	row := stmt.QueryRowContext(ctx, user.Name)
+	currentUser := &model.User{}
+
+	err = row.Scan(&currentUser.UserID, &currentUser.Name, &currentUser.Email, &currentUser.UserIdentifier,
+		&currentUser.UserPassword, &currentUser.UserTypeIdentifier)
+
+	if err != nil {
+		return &response.GenericUserResponse{Error: err.Error()}, err
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(currentUser.UserPassword), []byte(user.UserPassword))
+
+	if err != nil {
+		return &response.GenericUserResponse{Error: "password incorrect"}, nil
+	}
+	token, nil := generateToken(currentUser.UserID)
+	// La contraseña es válida, devolver el usuario autenticado
+	GenericUserResponse := &response.GenericUserResponse{
+		Message: "success",
+		User:    token,
+	}
+
+	return GenericUserResponse, nil
 }
 
 func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error) {
@@ -125,6 +166,25 @@ func hashPassword(password string) string {
 	return string(hashedPassword)
 }
 
+func generateToken(userID string) (string, error) {
+	// Crea un token JWT firmado con la clave secreta
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// Agrega los datos personalizados al token
+	claims := token.Claims.(jwt.MapClaims)
+	claims["userID"] = userID
+	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
+
+	// Firma el token con la clave secreta y devuelve el resultado
+	secretKey := os.Getenv("SECRET_KEY")
+	signedToken, err := token.SignedString([]byte(secretKey))
+	if err != nil {
+		return "", err
+	}
+
+	return signedToken, nil
+}
+
 /*
 func updateUserPassword(db *sql.DB, user *User, newPassword string) error {
     // Generar hash a partir de la nueva contraseña usando bcrypt
@@ -146,7 +206,7 @@ func updateUserPassword(db *sql.DB, user *User, newPassword string) error {
 }
 */
 
-func authenticateUser(db *sql.DB, username string, password string) (*User, error) {
+/* func authenticateUser(db *sql.DB, username string, password string) (*User, error) {
 	// Buscar el usuario en la base de datos por nombre de usuario
 	var user User
 	err := db.QueryRow("SELECT id, username, password FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Password)
@@ -162,4 +222,4 @@ func authenticateUser(db *sql.DB, username string, password string) (*User, erro
 
 	// La contraseña es válida, devolver el usuario autenticado
 	return &user, nil
-}
+} */

@@ -14,6 +14,7 @@ type userService struct {
 
 type UserService interface {
 	CreateUserHandler(ctx context.Context, user *model.User) (*response.CreateResponse, error)
+	LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error)
 	GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error)
 	GetUsersHandler(ctx context.Context) (*response.GenericUserResponse, error)
 }
@@ -30,6 +31,10 @@ func (ps *userService) CreateUserHandler(ctx context.Context, user *model.User) 
 
 func (ps *userService) GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error) {
 	return ps.UserRepository.GetUserHandler(ctx, id)
+}
+
+func (ps *userService) LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error) {
+	return ps.UserRepository.LoginUserHandler(ctx, user)
 }
 
 func (ps *userService) GetUsersHandler(ctx context.Context) (*response.GenericUserResponse, error) {

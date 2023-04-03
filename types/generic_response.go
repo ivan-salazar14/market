@@ -7,12 +7,12 @@ type CreateResponse struct {
 
 type GenericResponse struct {
 	Message string      `json:"message"`
-	Product interface{} `json:"product,omitempty"`
+	Product interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
 }
 
 type GenericUserResponse struct {
 	Message string      `json:"message"`
-	User    interface{} `json:"product,omitempty"`
+	User    interface{} `json:"data,omitempty"`
 	Error   string      `json:"error,omitempty"`
 }

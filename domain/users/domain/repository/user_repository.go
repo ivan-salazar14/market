@@ -11,5 +11,6 @@ import (
 type UserRepository interface {
 	CreateUserHandler(ctx context.Context, user *model.User) (*response.CreateResponse, error)
 	GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error)
+	LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error)
 	GetUsersHandler(ctx context.Context) (*response.GenericUserResponse, error)
 }
