@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"backend_crudgo/infrastructure/middlewares"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"backend_crudgo/domain/users/domain/service"
 	"backend_crudgo/domain/users/infrastructure/persistence"
 	"backend_crudgo/infrastructure/database"
-	"backend_crudgo/infrastructure/middleware"
 )
 
 const (
@@ -36,18 +36,18 @@ func (prod *UserRouter) CreateUserHandler(w http.ResponseWriter, r *http.Request
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		_ = middleware.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+		_ = middlewares.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
 
 	result, err := prod.Service.CreateUserHandler(ctx, &user)
 	if err != nil {
-		_ = middleware.HTTPError(w, r, http.StatusConflict, "Conflict", err.Error())
+		_ = middlewares.HTTPError(w, r, http.StatusConflict, "Conflict", err.Error())
 		return
 	}
 
 	w.Header().Add(LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
-	_ = middleware.JSON(w, r, http.StatusCreated, result)
+	_ = middlewares.JSON(w, r, http.StatusCreated, result)
 }
 
 // GetUserHandler Created initialize get user.
@@ -58,7 +58,7 @@ func (prod *UserRouter) LoginUserHandler(w http.ResponseWriter, r *http.Request)
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		_ = middleware.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+		_ = middlewares.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
 

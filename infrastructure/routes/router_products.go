@@ -6,6 +6,7 @@ import (
 	v1 "backend_crudgo/domain/products/domain/handler/v1"
 	"backend_crudgo/infrastructure/database"
 	"backend_crudgo/infrastructure/middlewares"
+
 	"github.com/go-chi/chi"
 )
 

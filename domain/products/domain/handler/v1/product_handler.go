@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"backend_crudgo/infrastructure/middlewares"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,7 +10,6 @@ import (
 	"backend_crudgo/domain/products/domain/service"
 	"backend_crudgo/domain/products/infrastructure/persistence"
 	"backend_crudgo/infrastructure/database"
-	"backend_crudgo/infrastructure/middleware"
 
 	"github.com/go-chi/chi"
 )
@@ -38,18 +38,18 @@ func (prod *ProductRouter) CreateProductHandler(w http.ResponseWriter, r *http.R
 
 	err := json.NewDecoder(r.Body).Decode(&product)
 	if err != nil {
-		_ = middleware.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+		_ = middlewares.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
 		return
 	}
 
 	result, err := prod.Service.CreateProductHandler(ctx, &product)
 	if err != nil {
-		_ = middleware.HTTPError(w, r, http.StatusConflict, "Conflict", err.Error())
+		_ = middlewares.HTTPError(w, r, http.StatusConflict, "Conflict", err.Error())
 		return
 	}
 
 	w.Header().Add(LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
-	_ = middleware.JSON(w, r, http.StatusCreated, result)
+	_ = middlewares.JSON(w, r, http.StatusCreated, result)
 }
 
 // GetProductHandler Created initialize get product.
