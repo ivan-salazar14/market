@@ -167,14 +167,13 @@ func hashPassword(password string) string {
 }
 
 func generateToken(userID string) (string, error) {
-	// Crea un token JWT firmado con la clave secreta
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	// Agrega los datos personalizados al token
-	claims := token.Claims.(jwt.MapClaims)
-	claims["userID"] = userID
-	claims["exp"] = time.Now().Add(time.Hour * 24).Unix()
-
+	// Crear una estructura de claims para el token
+	claims := jwt.MapClaims{
+		"sub": userID,
+		"exp": time.Now().Add(time.Hour * 24).Unix(), // El token expira en 24 horas
+		"iat": time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// Firma el token con la clave secreta y devuelve el resultado
 	secretKey := os.Getenv("SECRET_KEY")
 	signedToken, err := token.SignedString([]byte(secretKey))

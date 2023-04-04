@@ -1,9 +1,10 @@
-package middleware
+package middlewares
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"net/http"
 	"os"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -14,11 +15,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Authorization token missing", http.StatusUnauthorized)
 			return
 		}
-
+		tokenString = tokenString[len("Bearer "):]
 		// Verificar y decodificar el token
 		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-			// Especificar la clave secreta utilizada para firmar el token
-			return os.Getenv("SECRET_KEY"), nil
+			secretKey := os.Getenv("SECRET_KEY")
+			return []byte(secretKey), nil
 		})
 		if err != nil || !token.Valid {
 			http.Error(w, "Invalid or expired token", http.StatusUnauthorized)
