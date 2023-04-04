@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"backend_crudgo/infrastructure/kit/enum"
 	"backend_crudgo/infrastructure/middlewares"
 	"encoding/json"
 	"fmt"
@@ -12,11 +13,6 @@ import (
 	"backend_crudgo/infrastructure/database"
 
 	"github.com/go-chi/chi"
-)
-
-const (
-	ID       = "id"
-	LOCATION = "Location"
 )
 
 // ProductRouter router
@@ -48,14 +44,14 @@ func (prod *ProductRouter) CreateProductHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	w.Header().Add(LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
+	w.Header().Add(enum.LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
 	_ = middlewares.JSON(w, r, http.StatusCreated, result)
 }
 
 // GetProductHandler Created initialize get product.
 func (prod *ProductRouter) GetProductHandler(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
-	var id = chi.URLParam(r, "id")
+	var id = chi.URLParam(r, enum.ID)
 	productResponse, err := prod.Service.GetProductHandler(ctx, id)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)

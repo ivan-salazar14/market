@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"backend_crudgo/infrastructure/kit/enum"
 	"backend_crudgo/infrastructure/middlewares"
 	"encoding/json"
 	"fmt"
@@ -10,11 +11,6 @@ import (
 	"backend_crudgo/domain/users/domain/service"
 	"backend_crudgo/domain/users/infrastructure/persistence"
 	"backend_crudgo/infrastructure/database"
-)
-
-const (
-	ID       = "id"
-	LOCATION = "Location"
 )
 
 // UserRouter router
@@ -46,13 +42,12 @@ func (prod *UserRouter) CreateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	w.Header().Add(LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
+	w.Header().Add(enum.LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
 	_ = middlewares.JSON(w, r, http.StatusCreated, result)
 }
 
-// GetUserHandler Created initialize get user.
+// LoginUserHandler login a user.
 func (prod *UserRouter) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
-
 	var user model.User
 	var ctx = r.Context()
 

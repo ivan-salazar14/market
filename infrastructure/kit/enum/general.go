@@ -5,4 +5,6 @@ const (
 	BasePathUser string = "/api/market/users"
 	App          string = "market"
 	HealthPath   string = "/health"
+	ID                  = "id"
+	LOCATION            = "Location"
 )
