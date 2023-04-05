@@ -49,11 +49,9 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 		return &response.CreateResponse{}, err
 	}
 
-	GenericUserResponse := response.CreateResponse{
+	return &response.CreateResponse{
 		Message: "User created",
-	}
-
-	return &GenericUserResponse, nil
+	}, nil
 }
 
 func (sr *sqlUserRepo) LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error) {
@@ -86,12 +84,10 @@ func (sr *sqlUserRepo) LoginUserHandler(ctx context.Context, user *model.User) (
 	}
 	token, nil := generateToken(currentUser.UserID)
 	// La contraseña es válida, devolver el usuario autenticado
-	GenericUserResponse := &response.GenericUserResponse{
-		Message: "success",
+	return &response.GenericUserResponse{
+		Message: "Success",
 		User:    token,
-	}
-
-	return GenericUserResponse, nil
+	}, nil
 }
 
 func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error) {
@@ -116,12 +112,10 @@ func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response
 		return &response.GenericUserResponse{Error: err.Error()}, err
 	}
 
-	GenericUserResponse := &response.GenericUserResponse{
+	return &response.GenericUserResponse{
 		Message: "Get user success",
 		User:    user,
-	}
-
-	return GenericUserResponse, nil
+	}, nil
 }
 
 func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUserResponse, error) {
@@ -149,12 +143,10 @@ func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUs
 	if err != nil {
 		return &response.GenericUserResponse{Error: err.Error()}, err
 	}
-	GenericUserResponse := &response.GenericUserResponse{
+	return &response.GenericUserResponse{
 		Message: "Get user success",
 		User:    users,
-	}
-
-	return GenericUserResponse, nil
+	}, nil
 }
 
 func hashPassword(password string) string {
