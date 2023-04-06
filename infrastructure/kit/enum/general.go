@@ -6,5 +6,7 @@ const (
 	App          string = "market"
 	HealthPath   string = "/health"
 	ID                  = "id"
-	LOCATION            = "Location"
+	Location            = "Location"
+	SecretKey    string = "secret-key"
+	EmptyString  string = "empty"
 )

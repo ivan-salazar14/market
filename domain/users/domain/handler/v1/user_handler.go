@@ -2,7 +2,6 @@ package v1
 
 import (
 	"backend_crudgo/infrastructure/kit/enum"
-	"backend_crudgo/infrastructure/middlewares"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -13,7 +12,7 @@ import (
 	"backend_crudgo/infrastructure/database"
 )
 
-// UserRouter router
+// UserRouter is a struct that contains a UserService instance. It is used to create an HTTP router for user-related endpoints.
 type UserRouter struct {
 	Service service.UserService
 }
@@ -30,75 +29,68 @@ func (prod *UserRouter) CreateUserHandler(w http.ResponseWriter, r *http.Request
 	var user model.User
 	var ctx = r.Context()
 
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		_ = middlewares.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		writeJSONResponseWithMarshalling(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	result, err := prod.Service.CreateUserHandler(ctx, &user)
+	result, err := prod.Service.CreateUser(ctx, &user)
 	if err != nil {
-		_ = middlewares.HTTPError(w, r, http.StatusConflict, "Conflict", err.Error())
+		writeJSONResponseWithMarshalling(w, http.StatusConflict, err.Error())
 		return
 	}
 
-	w.Header().Add(enum.LOCATION, fmt.Sprintf("%s%s", r.URL.String(), result))
-	_ = middlewares.JSON(w, r, http.StatusCreated, result)
+	w.Header().Add(enum.Location, fmt.Sprintf("%s%s", r.URL.String(), result))
+	writeJSONResponseWithMarshalling(w, http.StatusCreated, result)
 }
 
-// LoginUserHandler login a user.
+// LoginUserHandler is the HTTP handler for user login. It receives an HTTP request with a JSON body containing user credentials.
+// It verifies the user's authenticity through the user service and returns a JSON response containing user information and an authentication token upon success.
+// If there is an error processing the request, it returns an appropriate HTTP error response.
 func (prod *UserRouter) LoginUserHandler(w http.ResponseWriter, r *http.Request) {
 	var user model.User
 	var ctx = r.Context()
 
-	err := json.NewDecoder(r.Body).Decode(&user)
-	if err != nil {
-		_ = middlewares.HTTPError(w, r, http.StatusBadRequest, "Bad request", err.Error())
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		writeJSONResponseWithMarshalling(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
-	userResponse, err := prod.Service.LoginUserHandler(ctx, &user)
+	userResponse, err := prod.Service.LoginUser(ctx, &user)
 
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		writeJSONResponseWithMarshalling(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	jsonBytes, err := json.Marshal(userResponse)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
+	writeJSONResponseWithMarshalling(w, http.StatusOK, userResponse)
 }
 
+// GetUsersHandler is the HTTP handler for retrieving users.
+// It calls the user service to retrieve the list of users and returns a JSON response containing the user information upon success.
+// If there is an error processing the request, it returns an appropriate HTTP error response.
 func (prod *UserRouter) GetUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var ctx = r.Context()
 
-	userResponse, err := prod.Service.GetUsersHandler(ctx)
+	userResponse, err := prod.Service.GetUsers(ctx)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		writeJSONResponseWithMarshalling(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	jsonBytes, err := json.Marshal(userResponse)
+	writeJSONResponseWithMarshalling(w, http.StatusOK, userResponse)
+}
+
+func writeJSONResponseWithMarshalling(w http.ResponseWriter, statusCode int, data interface{}) {
+	jsonBytes, err := json.Marshal(data)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	_, err = w.Write(jsonBytes)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
+	w.WriteHeader(statusCode)
+	if _, err = w.Write(jsonBytes); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
 }

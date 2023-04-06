@@ -4,6 +4,7 @@ import (
 	"backend_crudgo/domain/users/domain/model"
 	repoDomain "backend_crudgo/domain/users/domain/repository"
 	"backend_crudgo/infrastructure/database"
+	"backend_crudgo/infrastructure/kit/enum"
 	response "backend_crudgo/types"
 	"context"
 	"database/sql"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-
 	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -27,7 +27,8 @@ func NewUserRepository(Conn *database.DataDB) repoDomain.UserRepository {
 	}
 }
 
-func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) (*response.CreateResponse, error) {
+// CreateUser creates a new user in the database.
+func (sr *sqlUserRepo) CreateUser(ctx context.Context, user *model.User) (*response.CreateResponse, error) {
 	var idResult string
 
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, InsertUser)
@@ -41,11 +42,12 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 			log.Error().Msgf("Could not close testament : [error] %s", err.Error())
 		}
 	}()
+
 	user.UserPassword = hashPassword(user.UserPassword)
 	row := stmt.QueryRowContext(ctx, &user.UserID, &user.Name, &user.UserIdentifier, &user.Email,
 		&user.UserPassword, &user.UserTypeIdentifier)
-	err = row.Scan(&idResult)
-	if err != sql.ErrNoRows {
+
+	if err = row.Scan(&idResult); err != sql.ErrNoRows {
 		return &response.CreateResponse{}, err
 	}
 
@@ -54,7 +56,8 @@ func (sr *sqlUserRepo) CreateUserHandler(ctx context.Context, user *model.User) 
 	}, nil
 }
 
-func (sr *sqlUserRepo) LoginUserHandler(ctx context.Context, user *model.User) (*response.GenericUserResponse, error) {
+// LoginUser logs in a user by checking if their password is correct.
+func (sr *sqlUserRepo) LoginUser(ctx context.Context, user *model.User) (*response.GenericUserResponse, error) {
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectLoginUser)
 	if err != nil {
 		return &response.GenericUserResponse{}, err
@@ -70,27 +73,27 @@ func (sr *sqlUserRepo) LoginUserHandler(ctx context.Context, user *model.User) (
 	row := stmt.QueryRowContext(ctx, user.Name)
 	currentUser := &model.User{}
 
-	err = row.Scan(&currentUser.UserID, &currentUser.Name, &currentUser.Email, &currentUser.UserIdentifier,
-		&currentUser.UserPassword, &currentUser.UserTypeIdentifier)
-
-	if err != nil {
+	if err = row.Scan(&currentUser.UserID, &currentUser.Name, &currentUser.Email, &currentUser.UserIdentifier, &currentUser.UserPassword, &currentUser.UserTypeIdentifier); err != nil {
 		return &response.GenericUserResponse{Error: err.Error()}, err
 	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(currentUser.UserPassword), []byte(user.UserPassword))
-
-	if err != nil {
-		return &response.GenericUserResponse{Error: "password incorrect"}, nil
+	if err = bcrypt.CompareHashAndPassword([]byte(currentUser.UserPassword), []byte(user.UserPassword)); err != nil {
+		return &response.GenericUserResponse{Error: "Password incorrect"}, nil
 	}
-	token, nil := generateToken(currentUser.UserID)
-	// La contraseña es válida, devolver el usuario autenticado
+	token, err := generateToken(currentUser.UserID)
+	if err != nil {
+		log.Error().Msgf("Could not generate token: [error] %s", err.Error())
+		return nil, err
+	}
+
 	return &response.GenericUserResponse{
 		Message: "Success",
 		User:    token,
 	}, nil
 }
 
-func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response.GenericUserResponse, error) {
+// GetUser retrieves a specific user from the database.
+func (sr *sqlUserRepo) GetUser(ctx context.Context, id string) (*response.GenericUserResponse, error) {
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectUser)
 	if err != nil {
 		return &response.GenericUserResponse{}, err
@@ -106,9 +109,7 @@ func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response
 	row := stmt.QueryRowContext(ctx, id)
 	user := &model.User{}
 
-	err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated,
-		&user.UserModify, &user.DateModify)
-	if err != nil {
+	if err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated, &user.UserModify, &user.DateModify); err != nil {
 		return &response.GenericUserResponse{Error: err.Error()}, err
 	}
 
@@ -118,7 +119,8 @@ func (sr *sqlUserRepo) GetUserHandler(ctx context.Context, id string) (*response
 	}, nil
 }
 
-func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUserResponse, error) {
+// GetUsers retrieves a list of all users from the database.
+func (sr *sqlUserRepo) GetUsers(ctx context.Context) (*response.GenericUserResponse, error) {
 	stmt, err := sr.Conn.DB.PrepareContext(ctx, SelectUsers)
 	if err != nil {
 		return &response.GenericUserResponse{}, nil
@@ -135,82 +137,40 @@ func (sr *sqlUserRepo) GetUsersHandler(ctx context.Context) (*response.GenericUs
 	var users []*model.User
 	for row.Next() {
 		var user = &model.User{}
-		err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword,
-			&user.DateCreated, &user.UserModify, &user.DateModify)
-
+		if err = row.Scan(&user.UserID, &user.Name, &user.Email, &user.UserIdentifier, &user.UserPassword, &user.DateCreated, &user.UserModify, &user.DateModify); err != nil {
+			return &response.GenericUserResponse{Error: err.Error()}, err
+		}
 		users = append(users, user)
 	}
-	if err != nil {
-		return &response.GenericUserResponse{Error: err.Error()}, err
-	}
+
 	return &response.GenericUserResponse{
 		Message: "Get user success",
 		User:    users,
 	}, nil
 }
 
+// hashPassword hashes a plain text password.
 func hashPassword(password string) string {
-	// Generate a hash of the password using bcrypt
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		panic(err)
+		log.Error().Msgf("Could not hash password: [error] %s", err.Error())
 	}
 	return string(hashedPassword)
 }
 
+// generateToken generates a new JWT token.
 func generateToken(userID string) (string, error) {
-	// Crear una estructura de claims para el token
 	claims := jwt.MapClaims{
 		"sub": userID,
-		"exp": time.Now().Add(time.Hour * 24).Unix(), // El token expira en 24 horas
+		"exp": time.Now().Add(time.Hour * 24).Unix(),
 		"iat": time.Now().Unix(),
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	// Firma el token con la clave secreta y devuelve el resultado
-	secretKey := os.Getenv("SECRET_KEY")
+	secretKey := os.Getenv(enum.SecretKey)
 	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
-		return "", err
+		return enum.EmptyString, err
 	}
 
 	return signedToken, nil
 }
-
-/*
-func updateUserPassword(db *sql.DB, user *User, newPassword string) error {
-    // Generar hash a partir de la nueva contraseña usando bcrypt
-    hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
-    if err != nil {
-        return err
-    }
-
-    // Actualizar la contraseña en la base de datos
-    _, err = db.Exec("UPDATE users SET password = ? WHERE id = ?", hashedPassword, user.ID)
-    if err != nil {
-        return err
-    }
-
-    // Actualizar la contraseña en la referencia del objeto User
-    user.Password = string(hashedPassword)
-
-    return nil
-}
-*/
-
-/* func authenticateUser(db *sql.DB, username string, password string) (*User, error) {
-	// Buscar el usuario en la base de datos por nombre de usuario
-	var user User
-	err := db.QueryRow("SELECT id, username, password FROM users WHERE username = ?", username).Scan(&user.ID, &user.Username, &user.Password)
-	if err != nil {
-		return nil, err
-	}
-
-	// Comparar la contraseña en texto plano con el hash de contraseña cifrado almacenado en la base de datos
-	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
-	if err != nil {
-		return nil, err
-	}
-
-	// La contraseña es válida, devolver el usuario autenticado
-	return &user, nil
-} */
